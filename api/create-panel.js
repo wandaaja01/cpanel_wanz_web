@@ -7,11 +7,11 @@ module.exports = async (req, res) => {
   const { username, paket, token } = req.body;
   if (!token || !token.endsWith("-verified")) return res.json({ error: "Unauthorized" });
 
-  const APIKEY = process.env.plta1;
-  const DOMAIN = "https://nabelsudahmandi.premium-cloud.my.id";
-  const EGG = process.env.egg1;
-  const NESTID = process.env.nestidv1;
-  const LOC = process.env.locationv1;
+  const APIKEY = ptla_lTh0WKxrrLI3Y6u5ulwcvR9HYrsK019eMVhVZIl04DU;
+  const DOMAIN = "https://freezing.indopanel.my.id";
+  const EGG = 15;
+  const NESTID = 5;
+  const LOC = 1;
 
   const mapping = {
     "1gb": [1000, 1000, 40],
@@ -85,4 +85,4 @@ module.exports = async (req, res) => {
     return res.json({ error: "Gagal buat panel" });
   }
 };
-  
+          
