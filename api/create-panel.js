@@ -1,17 +1,24 @@
 const fetch = require("node-fetch");
 const crypto = require("crypto");
 
+// Ambil config dari GitHub
+async function getPanelConfig() {
+  const res = await fetch("https://raw.githubusercontent.com/wandaaja01/panel-settings/main/config.json");
+  return await res.json();
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).send("POST only");
 
   const { username, paket, token } = req.body;
   if (!token || !token.endsWith("-verified")) return res.json({ error: "Unauthorized" });
 
-  const APIKEY = ptla_lTh0WKxrrLI3Y6u5ulwcvR9HYrsK019eMVhVZIl04DU;
+  const config = await getPanelConfig();
+  const APIKEY = config.plta;
   const DOMAIN = "https://freezing.indopanel.my.id";
-  const EGG = 15;
-  const NESTID = 5;
-  const LOC = 1;
+  const EGG = config.egg;
+  const NESTID = config.nest;
+  const LOC = config.location;
 
   const mapping = {
     "1gb": [1000, 1000, 40],
@@ -34,9 +41,20 @@ module.exports = async (req, res) => {
   try {
     const userRes = await fetch(`${DOMAIN}/api/application/users`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${APIKEY}` },
-      body: JSON.stringify({ email, username, first_name: username, last_name: "Panel", language: "en", password })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${APIKEY}`
+      },
+      body: JSON.stringify({
+        email,
+        username,
+        first_name: username,
+        last_name: "Panel",
+        language: "en",
+        password
+      })
     });
+
     const userData = await userRes.json();
     if (userData.errors) return res.json({ error: userData.errors[0].detail });
     const userId = userData.attributes.id;
@@ -49,7 +67,10 @@ module.exports = async (req, res) => {
 
     const serverRes = await fetch(`${DOMAIN}/api/application/servers`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${APIKEY}` },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${APIKEY}`
+      },
       body: JSON.stringify({
         name: `${username}-server`,
         user: userId,
@@ -82,7 +103,6 @@ module.exports = async (req, res) => {
       domain: DOMAIN
     });
   } catch (err) {
-    return res.json({ error: "Gagal buat panel" });
+    return res.json({ error: "Gagal membuat panel. Cek kembali config atau koneksi." });
   }
 };
-          
