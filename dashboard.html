@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Panel</title>
+  <meta charset="UTF-8" />
+  <style>
+    body { background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 2em; }
+    input, select, button { width: 300px; margin: 10px; padding: 10px; border-radius: 6px; border: none; }
+    button { background: #00b894; color: white; cursor: pointer; }
+    #result { background: #222; padding: 20px; margin-top: 20px; border-radius: 10px; display: none; width: 90%; max-width: 500px; }
+  </style>
+</head>
+<body>
+  <h2>🚀 Create Hosting Panel</h2>
+  <form id="createForm">
+    <input type="text" name="username" placeholder="Username Panel" required>
+    <select name="paket" required>
+      <option value="">Pilih Paket RAM</option>
+      <option value="1gb">1 GB</option>
+      <option value="2gb">2 GB</option>
+      <option value="3gb">3 GB</option>
+      <option value="4gb">4 GB</option>
+      <option value="5gb">5 GB</option>
+      <option value="6gb">6 GB</option>
+      <option value="7gb">7 GB</option>
+      <option value="8gb">8 GB</option>
+      <option value="9gb">9 GB</option>
+      <option value="10gb">10 GB</option>
+      <option value="unli">Unlimited</option>
+    </select>
+    <button type="submit">Buat Panel</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    if (!localStorage.getItem("auth")) {
+      alert("Kamu belum login!");
+      location.href = "/index.html";
+    }
+
+    const form = document.getElementById('createForm');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.token = localStorage.getItem("auth");
+
+      const res = await fetch('/api/create-panel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+
+      const json = await res.json();
+      if (json.error) return alert(json.error);
+
+      result.style.display = 'block';
+      result.innerHTML = `
+        <h3>✅ Panel Berhasil</h3>
+        ID Server: ${json.server_id}<br>
+        ID User: ${json.user_id}<br>
+        Username: ${json.username}<br>
+        Password: ${json.password}<br>
+        RAM: ${json.ram}MB | Disk: ${json.disk}MB | CPU: ${json.cpu}%<br>
+        <a href="${json.domain}" target="_blank">
+          <button style="margin-top:10px;">Login ke Panel</button>
+        </a>
+      `;
+    });
+  </script>
+</body>
+</html>
