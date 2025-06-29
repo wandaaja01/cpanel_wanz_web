@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Panel - Wanz Official</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #009EFF, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      animation: fadeIn 0.7s ease-in-out;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #007BFF;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #007BFF;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    #popup {
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      color: #333;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      padding: 20px;
+      z-index: 999;
+      width: 90%;
+      max-width: 400px;
+      display: none;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translate(-50%, -60%); opacity: 0; }
+      to { transform: translate(-50%, -50%); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .copy-btn {
+      margin-top: 10px;
+      background: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create Panel</h2>
+    <input type="text" id="nama" placeholder="Nama Anda">
+    <input type="text" id="nomor" placeholder="Nomor WhatsApp (628xxx)">
+    <select id="paket">
+      <option value="">-- Pilih Paket --</option>
+      <option value="1gb">1GB</option>
+      <option value="2gb">2GB</option>
+      <option value="3gb">3GB</option>
+      <option value="4gb">4GB</option>
+      <option value="5gb">5GB</option>
+      <option value="6gb">6GB</option>
+      <option value="7gb">7GB</option>
+      <option value="8gb">8GB</option>
+      <option value="9gb">9GB</option>
+      <option value="10gb">10GB</option>
+      <option value="unli">UNLIMITED</option>
+    </select>
+    <button onclick="buatPanel()">Create Panel</button>
+  </div>
+
+  <div id="popup"></div>
+
+  <script>
+    function showPopup(msg, success = true) {
+      const pop = document.getElementById('popup');
+      pop.style.display = 'block';
+      pop.innerHTML = msg;
+      pop.style.border = success ? '2px solid #28a745' : '2px solid red';
+    }
+
+    function buatPanel() {
+      const nama = document.getElementById('nama').value.trim();
+      const nomor = document.getElementById('nomor').value.trim();
+      const paket = document.getElementById('paket').value;
+
+      if (!nama || !nomor || !paket) {
+        return showPopup("❗ Semua kolom wajib diisi!", false);
+      }
+
+      fetch("/api/create-panel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama, nomor, paket })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) return showPopup("❌ " + data.error, false);
+        showPopup(`
+          <b>✅ PANEL DIBUAT!</b><br><br>
+          Username: <b>${data.username}</b><br>
+          Password: <b>${data.password}</b><br>
+          RAM: ${data.ram} MB<br>
+          CPU: ${data.cpu}%<br>
+          Disk: ${data.disk} MB<br>
+          ID User: ${data.user_id}<br>
+          ID Server: ${data.server_id}<br><br>
+          <a href="${data.domain}" target="_blank">
+            <button class="copy-btn">LOGIN PANEL</button>
+          </a>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.username}')">COPY USERNAME</button>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${data.password}')">COPY PASSWORD</button>
+        `);
+      })
+      .catch(e => showPopup("❌ Terjadi kesalahan teknis: " + e.message, false));
+    }
+  </script>
+</body>
+</html>
