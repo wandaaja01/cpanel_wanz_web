@@ -1,0 +1,8 @@
+{
+  "name": "wanz-cpanel",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "undici": "^6.0.0"
+  }
+}
