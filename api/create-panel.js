@@ -1,80 +1,94 @@
 const fetch = require("node-fetch");
 const crypto = require("crypto");
 
-// Ambil config dari GitHub
-async function getPanelConfig() {
-  const res = await fetch("https://raw.githubusercontent.com/wandaaja01/panel-settings/main/config.json");
-  return await res.json();
-}
+// RAM / DISK / CPU per paket
+const mapping = {
+  "1gb": [1000, 1000, 40],
+  "2gb": [2000, 1000, 60],
+  "3gb": [3000, 2000, 80],
+  "4gb": [4000, 2000, 100],
+  "5gb": [5000, 3000, 120],
+  "6gb": [6000, 3000, 140],
+  "7gb": [7000, 4000, 160],
+  "8gb": [8000, 4000, 180],
+  "9gb": [9000, 5000, 200],
+  "10gb": [10000, 5000, 220],
+  "unli": [99999, 99999, 300],
+  "unlimited": [99999, 99999, 300],
+};
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).send("POST only");
-
-  const { username, paket, token } = req.body;
-  if (!token || !token.endsWith("-verified")) return res.json({ error: "Unauthorized" });
-
-  const config = await getPanelConfig();
-  const APIKEY = config.plta;
-  const DOMAIN = "https://freezing.indopanel.my.id";
-  const EGG = config.egg;
-  const NESTID = config.nest;
-  const LOC = config.location;
-
-  const mapping = {
-    "1gb": [1000, 1000, 40],
-    "2gb": [2000, 1000, 60],
-    "3gb": [3000, 2000, 80],
-    "4gb": [4000, 2000, 100],
-    "5gb": [5000, 3000, 120],
-    "6gb": [6000, 3000, 140],
-    "7gb": [7000, 4000, 160],
-    "8gb": [8000, 4000, 180],
-    "9gb": [9000, 5000, 200],
-    "10gb": [10000, 5000, 220],
-    "unli": [0, 0, 0]
-  };
-
-  const [ram, disk, cpu] = mapping[paket] || [0, 0, 0];
-  const email = `${username}@gmail.com`;
-  const password = username + crypto.randomBytes(2).toString("hex");
-
   try {
-    const userRes = await fetch(`${DOMAIN}/api/application/users`, {
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    const { username, paket, token } = req.body;
+
+    if (!token || !token.endsWith("-verified"))
+      return res.status(403).json({ error: "Akses ditolak! Kamu bukan user premium." });
+
+    if (!username || !paket) return res.status(400).json({ error: "Username dan paket wajib diisi!" });
+
+    const [ram, disk, cpu] = mapping[paket.toLowerCase()] || [];
+    if (!ram) return res.status(400).json({ error: "Paket tidak valid!" });
+
+    // Ambil config dari GitHub
+    const configRes = await fetch("https://raw.githubusercontent.com/wandaaja01/panel-settings/main/config.json");
+    if (!configRes.ok) throw new Error("Gagal mengambil konfigurasi panel dari GitHub");
+    const config = await configRes.json();
+
+    const { plta, pltc, egg, nest, location } = config;
+    const domain = config.domain || "https://freezing.indopanel.my.id"; // fallback
+
+    const password = username + crypto.randomBytes(2).toString("hex");
+    const email = `${username}@gmail.com`;
+    const fullName = username.charAt(0).toUpperCase() + username.slice(1);
+
+    // 1. Buat user
+    const userRes = await fetch(domain + "/api/application/users", {
       method: "POST",
       headers: {
+        Accept: "application/json",
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${APIKEY}`
+        Authorization: `Bearer ${plta}`
       },
       body: JSON.stringify({
         email,
-        username,
-        first_name: username,
-        last_name: "Panel",
-        language: "en",
-        password
+        username: username.toLowerCase(),
+        first_name: fullName,
+        last_name: "Hosting",
+        password,
+        language: "en"
       })
     });
 
-    const userData = await userRes.json();
-    if (userData.errors) return res.json({ error: userData.errors[0].detail });
-    const userId = userData.attributes.id;
+    const userJson = await userRes.json();
+    if (userJson.errors) return res.json({ error: userJson.errors[0].detail || "Gagal membuat user" });
 
-    const eggRes = await fetch(`${DOMAIN}/api/application/nests/${NESTID}/eggs/${EGG}`, {
-      headers: { "Authorization": `Bearer ${APIKEY}` }
+    const userId = userJson.attributes.id;
+
+    // 2. Ambil startup command
+    const eggRes = await fetch(`${domain}/api/application/nests/${nest}/eggs/${egg}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${plta}`
+      }
     });
-    const eggData = await eggRes.json();
-    const startup = eggData.attributes.startup;
+    const eggJson = await eggRes.json();
+    const startup = eggJson.attributes.startup;
 
-    const serverRes = await fetch(`${DOMAIN}/api/application/servers`, {
+    // 3. Buat server
+    const serverRes = await fetch(domain + "/api/application/servers", {
       method: "POST",
       headers: {
+        Accept: "application/json",
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${APIKEY}`
+        Authorization: `Bearer ${plta}`
       },
       body: JSON.stringify({
-        name: `${username}-server`,
+        name: fullName + " Panel",
         user: userId,
-        egg: parseInt(EGG),
+        egg: parseInt(egg),
         docker_image: "ghcr.io/parkervcp/yolks:nodejs_18",
         startup,
         environment: {
@@ -83,26 +97,44 @@ module.exports = async (req, res) => {
           AUTO_UPDATE: "0",
           CMD_RUN: "npm start"
         },
-        limits: { memory: ram, swap: 0, disk: disk, io: 500, cpu: cpu },
-        feature_limits: { databases: 5, backups: 5, allocations: 5 },
-        deploy: { locations: [parseInt(LOC)], dedicated_ip: false, port_range: [] }
+        limits: {
+          memory: ram,
+          swap: 0,
+          disk: disk,
+          io: 500,
+          cpu: cpu
+        },
+        feature_limits: {
+          databases: 5,
+          backups: 5,
+          allocations: 5
+        },
+        deploy: {
+          locations: [parseInt(location)],
+          dedicated_ip: false,
+          port_range: []
+        }
       })
     });
 
-    const serverData = await serverRes.json();
-    if (serverData.errors) return res.json({ error: serverData.errors[0].detail });
+    const serverJson = await serverRes.json();
+    if (serverJson.errors) return res.json({ error: serverJson.errors[0].detail || "Gagal membuat server" });
+
+    const serverId = serverJson.attributes.id;
 
     return res.json({
-      server_id: serverData.attributes.id,
-      user_id: userId,
       username,
       password,
       ram,
       disk,
       cpu,
-      domain: DOMAIN
+      user_id: userId,
+      server_id: serverId,
+      domain
     });
+
   } catch (err) {
-    return res.json({ error: "Gagal membuat panel. Cek kembali config atau koneksi." });
+    console.error("[CREATE PANEL ERROR]", err);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 };
