@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wanz Official</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(ellipse at center, #0f0f0f 0%, #000000 100%);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      animation: fadeIn 1.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .title {
+      margin-top: 60px;
+      text-align: center;
+    }
+
+    .title h1 {
+      font-size: 2.8rem;
+      color: #0ff;
+      text-shadow: 0 0 15px #0ff;
+      animation: glow 2s infinite alternate;
+    }
+
+    .title p {
+      margin-top: 10px;
+      font-size: 1.2rem;
+      color: #aaa;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 10px #0ff; }
+      to { text-shadow: 0 0 20px #00faff; }
+    }
+
+    .form-box {
+      margin-top: 40px;
+      background: #111;
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 0 15px #00ffff88;
+      animation: fadeInUp 1s ease;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #0ff;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: #0ff;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      background: #333;
+      box-shadow: 0 0 10px #0ff;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0ff;
+      color: #000;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 15px #00faff;
+      transition: 0.3s ease;
+    }
+
+    button:hover {
+      background: #00faff;
+      box-shadow: 0 0 25px #00faff;
+    }
+
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111;
+      padding: 30px;
+      border-radius: 12px;
+      color: #0ff;
+      box-shadow: 0 0 30px #00faff;
+      z-index: 9999;
+      max-width: 90%;
+      width: 360px;
+      text-align: center;
+      animation: popupAnim 0.5s ease;
+    }
+
+    @keyframes popupAnim {
+      from { opacity: 0; transform: scale(0.7) translate(-50%, -50%); }
+      to { opacity: 1; transform: scale(1) translate(-50%, -50%); }
+    }
+
+    .popup h2 {
+      margin-bottom: 10px;
+      color: #0ff;
+      font-size: 1.6rem;
+    }
+
+    .popup .info {
+      margin: 10px 0;
+      font-size: 0.95rem;
+    }
+
+    .popup .buttons {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .popup button {
+      width: 100%;
+      padding: 10px;
+      background: #0ff;
+      color: #000;
+      font-weight: bold;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 10px #0ff;
+    }
+
+    .popup button:hover {
+      background: #00faff;
+      box-shadow: 0 0 15px #00faff;
+    }
+
+    .close-btn {
+      margin-top: 10px;
+      background: #f33 !important;
+      color: #fff !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="title">
+    <h1>Wanz Official</h1>
+    <p>Create Panel Hosting Website</p>
+  </div>
+
+  <div class="form-box">
+    <form id="panelForm">
+      <label for="nama">Nama Panel</label>
+      <input type="text" id="nama" required placeholder="Contoh: wanzserver" />
+
+      <label for="nomor">Nomor WhatsApp</label>
+      <input type="text" id="nomor" required placeholder="Contoh: 628xxxxxxx" />
+
+      <label for="password">Password Akun Premium</label>
+      <input type="password" id="password" required placeholder="Password Akun Premium" />
+
+      <label for="paket">Paket Hosting</label>
+      <select id="paket" required>
+        <option value="">Pilih Paket</option>
+        <option value="1gb">1GB</option>
+        <option value="2gb">2GB</option>
+        <option value="3gb">3GB</option>
+        <option value="4gb">4GB</option>
+        <option value="5gb">5GB</option>
+        <option value="6gb">6GB</option>
+        <option value="7gb">7GB</option>
+        <option value="8gb">8GB</option>
+        <option value="9gb">9GB</option>
+        <option value="10gb">10GB</option>
+        <option value="unli">UNLIMITED</option>
+      </select>
+
+      <button type="submit">Create Panel</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("panelForm");
+
+    const showPopup = (data) => {
+      const popup = document.createElement("div");
+      popup.className = "popup";
+
+      popup.innerHTML = `
+        <h2>✅ Panel Dibuat!</h2>
+        <div class="info">Username: <b>${data.username}</b></div>
+        <div class="info">Password: <b>${data.password}</b></div>
+        <div class="info">Paket: <b>${data.paket.toUpperCase()}</b></div>
+        <div class="info">User ID: <b>${data.user_id}</b></div>
+        <div class="info">Server ID: <b>${data.server_id}</b></div>
+
+        <div class="buttons">
+          <button onclick="copyToClipboard('${data.username}')">📋 Copy Username</button>
+          <button onclick="copyToClipboard('${data.password}')">📋 Copy Password</button>
+          <button onclick="window.open('${data.domain}', '_blank')">🌐 Login Panel</button>
+          <button class="close-btn" onclick="this.parentElement.parentElement.remove()">Tutup</button>
+        </div>
+      `;
+
+      document.body.appendChild(popup);
+    };
+
+    const copyToClipboard = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Berhasil disalin!");
+      });
+    };
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nama = document.getElementById("nama").value.trim();
+      const nomor = document.getElementById("nomor").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const paket = document.getElementById("paket").value;
+
+      try {
+        const res = await fetch("/api/create-panel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nama, nomor, password, paket }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) return alert(data.error || "❌ Gagal!");
+
+        showPopup(data);
+      } catch (err) {
+        alert("❌ Gagal menghubungi server.");
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
