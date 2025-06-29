@@ -1,0 +1,174 @@
+const fetch = require("node-fetch");
+const crypto = require("crypto");
+
+const paketMap = {
+  "1gb":  [1000, 1000, 40],
+  "2gb":  [2000, 1000, 60],
+  "3gb":  [3000, 2000, 80],
+  "4gb":  [4000, 2000, 100],
+  "5gb":  [5000, 3000, 120],
+  "6gb":  [6000, 3000, 140],
+  "7gb":  [7000, 4000, 160],
+  "8gb":  [8000, 4000, 180],
+  "9gb":  [9000, 5000, 200],
+  "10gb": [10000, 5000, 220],
+  "unli": [99999, 99999, 300]
+};
+
+module.exports = async (req, res) => {
+  try {
+    if (req.method !== "POST")
+      return res.status(405).json({ error: "Method Not Allowed" });
+
+    const { nama, nomor, password, paket } = req.body;
+
+    if (!nama || !nomor || !password || !paket)
+      return res.status(400).json({ error: "❗ Semua kolom wajib diisi!" });
+
+    const [ram, disk, cpu] = paketMap[paket.toLowerCase()] || [];
+    if (!ram) return res.status(400).json({ error: "❌ Paket tidak valid!" });
+
+    // Ambil config dari GitHub
+    const configRes = await fetch("https://raw.githubusercontent.com/wandaaja01/panel-settings/main/config.json");
+    const config = await configRes.json();
+
+    const { domain, plta, egg, nestid, location } = config;
+
+    // Ambil database user premium
+    const dbRes = await fetch("https://raw.githubusercontent.com/wandaaja01/panel-settings/main/premium-users.json");
+    const db = await dbRes.json();
+
+    const validUser = db.find(u => u.nomor === nomor && u.password === password);
+
+    if (!validUser)
+      return res.status(403).json({ error: "❌ Nomor & password tidak valid atau belum terdaftar." });
+
+    const username = nama.toLowerCase().replace(/\s+/g, '');
+    const email = `${username}@gmail.com`;
+    const panelPassword = username + crypto.randomBytes(2).toString("hex");
+
+    // Cek apakah email/username sudah dipakai
+    const cekRes = await fetch(`${domain}/api/application/users?filter[email]=${email}`, {
+      headers: { Authorization: `Bearer ${plta}` }
+    });
+    const cekTxt = await cekRes.text();
+
+    try {
+      const cekJson = JSON.parse(cekTxt);
+      if (cekJson.data && cekJson.data.length > 0)
+        return res.status(409).json({ error: "❌ Email atau username sudah digunakan!" });
+    } catch (e) {
+      return res.status(500).json({ error: "❌ Gagal parsing pengecekan user:\n" + cekTxt });
+    }
+
+    // Buat user
+    const userRes = await fetch(`${domain}/api/application/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + plta
+      },
+      body: JSON.stringify({
+        username,
+        email,
+        first_name: nama,
+        last_name: "Client",
+        language: "en",
+        password: panelPassword
+      })
+    });
+
+    const userTxt = await userRes.text();
+    let userJson;
+
+    try {
+      userJson = JSON.parse(userTxt);
+    } catch (e) {
+      return res.status(500).json({ error: "❌ Gagal membuat user:\n" + userTxt });
+    }
+
+    const userId = userJson.attributes.id;
+
+    // Ambil data egg startup
+    const eggRes = await fetch(`${domain}/api/application/nests/${nestid}/eggs/${egg}`, {
+      headers: { Authorization: "Bearer " + plta }
+    });
+
+    const eggTxt = await eggRes.text();
+    let eggJson;
+
+    try {
+      eggJson = JSON.parse(eggTxt);
+    } catch (e) {
+      return res.status(500).json({ error: "❌ Gagal parsing egg:\n" + eggTxt });
+    }
+
+    const startup = eggJson.attributes.startup;
+
+    // Buat server
+    const serverRes = await fetch(`${domain}/api/application/servers`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + plta
+      },
+      body: JSON.stringify({
+        name: `${username} Panel`,
+        user: userId,
+        egg: parseInt(egg),
+        docker_image: "ghcr.io/parkervcp/yolks:nodejs_18",
+        startup,
+        environment: {
+          INST: "npm",
+          USER_UPLOAD: "0",
+          AUTO_UPDATE: "0",
+          CMD_RUN: "npm start"
+        },
+        limits: {
+          memory: ram,
+          swap: 0,
+          disk: disk,
+          io: 500,
+          cpu: cpu
+        },
+        feature_limits: {
+          databases: 5,
+          backups: 5,
+          allocations: 5
+        },
+        deploy: {
+          locations: [parseInt(location)],
+          dedicated_ip: false,
+          port_range: []
+        }
+      })
+    });
+
+    const serverTxt = await serverRes.text();
+    let serverJson;
+
+    try {
+      serverJson = JSON.parse(serverTxt);
+    } catch (e) {
+      return res.status(500).json({ error: "❌ Gagal parsing server:\n" + serverTxt });
+    }
+
+    if (!serverJson || !serverJson.attributes)
+      return res.status(500).json({ error: "❌ Gagal membuat server: Response tidak lengkap!" });
+
+    return res.json({
+      username,
+      password: panelPassword,
+      user_id: userId,
+      server_id: serverJson.attributes.id,
+      domain,
+      ram,
+      disk,
+      cpu
+    });
+
+  } catch (err) {
+    console.error("[ERROR]", err);
+    return res.status(500).json({ error: "❌ Internal Error: " + err.message });
+  }
+};
