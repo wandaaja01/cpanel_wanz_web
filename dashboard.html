@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Panel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f3f4f6;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+    h2 {
+      color: #2196f3;
+      margin-bottom: 20px;
+    }
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 400px;
+      animation: fadeIn 0.7s ease;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background: #2196f3;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      border: none;
+    }
+    button:hover {
+      background: #1e88e5;
+    }
+    #result {
+      margin-top: 24px;
+      padding: 20px;
+      background: #ffffff;
+      border-left: 6px solid #2196f3;
+      border-radius: 10px;
+      max-width: 600px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .popup {
+      position: fixed;
+      top: 30px;
+      right: 30px;
+      background: #fff;
+      border-left: 6px solid #2196f3;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+      animation: slideIn 0.5s ease;
+      z-index: 99;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <h2>🚀 Create Hosting Panel</h2>
+  <form id="createForm">
+    <input type="text" name="username" placeholder="Username Panel" required>
+    <select name="paket" required>
+      <option value="">Pilih Paket RAM</option>
+      <option value="1gb">1 GB</option>
+      <option value="2gb">2 GB</option>
+      <option value="3gb">3 GB</option>
+      <option value="4gb">4 GB</option>
+      <option value="5gb">5 GB</option>
+      <option value="6gb">6 GB</option>
+      <option value="7gb">7 GB</option>
+      <option value="8gb">8 GB</option>
+      <option value="9gb">9 GB</option>
+      <option value="10gb">10 GB</option>
+      <option value="unli">Unlimited</option>
+    </select>
+    <button type="submit">Buat Panel</button>
+  </form>
+
+  <div id="result" style="display:none;"></div>
+
+  <script>
+    if (!localStorage.getItem("auth")) {
+      alert("Kamu belum login!");
+      location.href = "/index.html";
+    }
+
+    const form = document.getElementById('createForm');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.token = localStorage.getItem("auth");
+
+      const res = await fetch('/api/create-panel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+
+      const json = await res.json();
+      if (json.error) {
+        return showPopup(json.error, "error");
+      }
+
+      result.style.display = 'block';
+      result.innerHTML = `
+        <h3>✅ Panel Berhasil Dibuat</h3>
+        <p><strong>Username:</strong> ${json.username} <button onclick="copyText('${json.username}')">Copy</button></p>
+        <p><strong>Password:</strong> ${json.password} <button onclick="copyText('${json.password}')">Copy</button></p>
+        <p><strong>RAM:</strong> ${json.ram} MB<br>
+        <strong>Disk:</strong> ${json.disk} MB<br>
+        <strong>CPU:</strong> ${json.cpu}%<br>
+        <strong>Server ID:</strong> ${json.server_id}<br>
+        <strong>User ID:</strong> ${json.user_id}</p>
+        <a href="${json.domain}" target="_blank"><button>Kunjungi Panel</button></a>
+      `;
+      showPopup("Panel berhasil dibuat!", "success");
+    });
+
+    function showPopup(message, type) {
+      const pop = document.createElement('div');
+      pop.className = 'popup';
+      pop.style.borderLeftColor = type === "error" ? "#e74c3c" : "#2ecc71";
+      pop.innerText = message;
+      document.body.appendChild(pop);
+      setTimeout(() => pop.remove(), 4000);
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text);
+      showPopup("Disalin ke clipboard!", "success");
+    }
+  </script>
+</body>
+</html>
